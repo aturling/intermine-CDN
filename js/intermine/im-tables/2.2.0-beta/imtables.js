@@ -4732,7 +4732,10 @@
       if (this.view == null) {
         throw new Error('No view in call to new SummaryModel');
       }
-      this.fetch = _.partial(getColumnSummary, this.query, this.view);
+      // NEW: path variable
+      var path = this.view.path || this.view;
+      //this.fetch = _.partial(getColumnSummary, this.query, this.view);
+      this.fetch = _.partial(getColumnSummary, this.query, path);
       type = this.view.getType();
       integral = inty(type);
       this.set({
@@ -4744,7 +4747,8 @@
       this.histogram = new SummaryHistogram();
       this.items = new SummaryItems();
       this.listenTo(this, 'change:filterTerm', this.onFilterChange);
-      this.listenTo(this, 'change:summaryLimit', this.onLimitChange);
+      // Change summaryLimit to limit (var name typo?) to trigger onLimitChange
+      this.listenTo(this, 'change:limit', this.onLimitChange);
       this.listenTo(this.query, 'change:constraints', this.load);
       this.load();
     }
@@ -4802,12 +4806,16 @@
       }
     };
 
+    /* Updated to increase by 20 items at a time not double
+     * was growing too fast
+     */
     SummaryModel.prototype.increaseLimit = function(factor) {
       var limit;
       if (factor == null) {
-        factor = 2;
+        factor = 20;
       }
-      limit = factor * this.get('limit');
+      //limit = factor * this.get('limit');
+      limit = factor + this.get('limit');
       return this.set({
         limit: limit
       });
@@ -5396,8 +5404,14 @@
 
   CACHE = {};
 
-  getKey = function(query, path) {
-    return query.service.root + ":" + query.service.token + ":" + (query.toXML()) + ":" + path;
+//  getKey = function(query, path) {
+//    return query.service.root + ":" + query.service.token + ":" + (query.toXML()) + ":" + path;
+//  };
+
+  // Need to include filter term and summary limit in query
+  getKey = function(query, path, term, limit) {
+      var termKey = term ? term.toLowerCase() : '';
+      return query.service.root + ":" + query.service.token + ":" + (query.toXML()) + ":" + path + ":" + termKey + ":" + limit;
   };
 
   exports.getColumnSummary = function(query, path, term, limit) {
@@ -15446,11 +15460,12 @@ module.exports = '2.1.0';
       unselected = this.model.items.where({
         selected: false
       });
-      if (unselected.length === 0) {
-        return this.model.set({
-          error: new Error('All items are selected')
-        });
-      }
+      // Remove this error because it prevents users from selecting all items after applying a filter:
+      //if (unselected.length === 0) {
+      //  return this.model.set({
+      //    error: new Error('All items are selected')
+      //  });
+      //}
       anyIsNull = _.any(vals, function(v) {
         return v == null;
       });
@@ -15664,9 +15679,16 @@ module.exports = '2.1.0';
 
     SummaryItems.prototype.addItem = function(model, body) {
       if (this.rendered) {
+	      // Fixes undefined object error
+	      if (body && (body.noteType === 1 || body.nodeType === 11 || body.jquery)) {
+		      targetContainer = body;
+	      } else {
+		      targetContainer = this.tbody;
+	      }
         return this.renderChild(rowId(model), new FacetRow({
           model: model
-        }), body != null ? body : this.tbody);
+          }), targetContainer);
+//        }), body != null ? body : this.tbody);
       }
     };
 
@@ -15690,7 +15712,7 @@ module.exports = '2.1.0';
       if (this.model.get('loading')) {
         return;
       }
-      return this.model.increaseLimit(2);
+      return this.model.increaseLimit(20); // updated to increase by this amount not double each time
     };
 
     SummaryItems.prototype.clearValueFilter = function() {
@@ -80851,7 +80873,10 @@ function domManip( collection, args, callback, ignored ) {
 	}
 
 	if ( l ) {
-		fragment = buildFragment( args, collection[ 0 ].ownerDocument, false, collection, ignored );
+		//fragment = buildFragment( args, collection[ 0 ].ownerDocument, false, collection, ignored );
+                // Safe fallback when ownerDocument is undefined (fixes undefined object error)
+                var contextDoc = (collection[ 0 ] && collection[ 0 ].ownerDocument) || window.document || document;
+                fragment = buildFragment( args, contextDoc, false, collection, ignored );
 		first = fragment.firstChild;
 
 		if ( fragment.childNodes.length === 1 ) {
