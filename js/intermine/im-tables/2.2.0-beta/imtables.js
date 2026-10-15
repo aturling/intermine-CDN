@@ -2423,7 +2423,9 @@
     FilterValuesPlaceholder: 'Filter values',
     DownloadData: 'Download data',
     DownloadFormat: 'As',
-    MoreItems: 'Load more items',
+    // Disabling load more items button
+    //MoreItems: 'Load more items',
+    MoreItems: '',
     Include: 'Restrict table to matching rows',
     Exclude: 'Exclude matching rows from table',
     Reset: 'Reset selection',
@@ -5541,7 +5543,7 @@ exports.column_manager_tabs = "<ul class=\"nav nav-tabs\">\n    <li role=\"prese
 exports.list_tag = "<%- id %>\n<span class=\"im-remove\" title=\"<%- Messages.getText('lists.RemoveTag') %>\">\n    <%= Icons.icon('Remove') %>\n</span>\n";
 exports.summary_selected_count = "<% if (state.selectedCount) { %>\n    <div class=\"alert alert-info im-selected-count\">\n        <strong>\n            <%- Messages.getText('summary.SelectedCount', state) %>\n        </strong>\n    </div>\n<% } %>\n";
 exports.export_compression_controls = "<h4><%- Messages.getText('export.category.Compression', state) %></h4>\n\n<% if (exportDataPackage) { %>\n    <p>Frictionless Data Package uses ZIP Compression only.</p>\n<% } else { %>\n    <div class=\"checkbox im-compress\">\n        <label>\n            <input type=\"checkbox\" <%= compress ? 'checked' : void 0 %>>\n            <%- Messages.getText('export.UseCompression') %>\n        </label>\n    </div>\n\n    <fieldset <%= compress ? void 0 : 'disabled' %>>\n        <div class=\"radio\">\n            <label>\n                <input type=\"radio\"\n                    name=\"gzip\"\n                    <%= (compression === 'gzip') ? 'checked' : void 0 %>>\n                <%- Messages.getText('export.UseGZIP') %>\n            </label>\n        </div>\n\n        <div class=\"radio\">\n            <label>\n                <input type=\"radio\"\n                    name=\"zip\"\n                    <%= (compression === 'zip') ? 'checked' : void 0 %>>\n                <%- Messages.getText('export.UseZIP') %>\n            </label>\n        </div>\n    </fieldset>\n<% } %>";
-exports.summary_items = "<% if (!(/boolean/i).test(type)) { %>\n    <div class=\"input-group im-filter-group\">\n    <span class=\"input-group-btn\">\n        <button class=\"btn btn-default im-clear-value-filter\">\n        <%= Icons.icon('Refresh') %>\n        </button>\n    </span>\n    <input type=\"search\" class=\"form-control im-filter-values\"\n        value=\"<%- filterTerm %>\"\n        placeholder=\"<%- Messages.getText('summary.FilterValuesPlaceholder') %>\">\n    </div>\n<% } %>\n\n<div class=\"im-item-table\">\n  <table class=\"table table-condensed table-striped\">\n    <colgroup>\n      <% _.each(colClasses, function (cls) { %>\n        <col class=\"<%- cls %>\">\n      <% }); %>\n    </colgroup>\n    <thead>\n      <tr>\n        <% _.each(colHeaders, function (hdr) { %>\n          <th><%- hdr %></th>\n        <% }); %>\n      </tr>\n    </thead>\n    <tbody class=\"scrollable\">\n    </tbody>\n  </table>\n\n  <% if (hasMore) { %>\n    <div class=\"im-load-more\">\n      <%- Messages.getText('summary.MoreItems') %>\n    </div>\n  <% } %>\n</div>\n\n<div class=\"im-summary-controls\">\n</div>\n";
+exports.summary_items = "<% if (!(/boolean/i).test(type)) { %>\n    <div class=\"input-group im-filter-group\">\n    <span class=\"input-group-btn\">\n        <button class=\"btn btn-default im-clear-value-filter\">\n        <%= Icons.icon('Refresh') %>\n        </button>\n    </span>\n    <input type=\"search\" class=\"form-control im-filter-values\"\n        value=\"<%- filterTerm %>\"\n        placeholder=\"<%- Messages.getText('summary.FilterValuesPlaceholder') %>\">\n    </div>\n<% } %>\n\n<div class=\"im-item-table\">\n  <table class=\"table table-condensed table-striped\">\n    <colgroup>\n      <% _.each(colClasses, function (cls) { %>\n        <col class=\"<%- cls %>\">\n      <% }); %>\n    </colgroup>\n    <thead>\n      <tr>\n        <% _.each(colHeaders, function (hdr) { %>\n          <th><%- hdr %></th>\n        <% }); %>\n      </tr>\n    </thead>\n    <tbody class=\"scrollable\">\n    </tbody>\n  </table>\n\n  <% if (hasMore) { %>\n    <div class=\"im-load-more-disabled\">\n      <%- Messages.getText('summary.MoreItems') %>\n    </div>\n  <% } %>\n</div>\n\n<div class=\"im-summary-controls\">\n</div>\n";
 exports.export_destination_galaxy_options = "<div class=\"form-group\">\n    <label><%- Messages.getText('GalaxyURILabel') %></label>\n    <input type=\"url\"\n           class=\"form-control im-galaxy-uri-param\"\n           value=\"<%- Galaxy.Current || Galaxy.Main %>\">\n</div>\n<div class=\"checkbox im-save-galaxy\">\n    <label>\n        <input type=\"checkbox\" <%= (Galaxy.Save) ? 'checked' : void 0 %>>\n        <%- Messages.getText('SaveGalaxyURL') %></label>\n    </label>\n</div>\n";
 exports.join_manager_body = "<ul class=\"list-group\"></ul>\n\n<div class=\"alert alert-info\">\n  <%= Icons.icon('Info') %>\n  <strong class=\"im-clickable\">\n    <%- Messages.getText('joins.ExplanationTitle') %>\n  </strong>\n  <p class=\"<%= (!state.explaining) ? 'im-latent' : void 0 %>\">\n    <%- Messages.getText('joins.Explanation') %>\n  </p>\n</div>\n";
 exports.row_surrogate = "<%= Icons.icon(above ? 'ASC' : 'DESC') %>\n<%- item %>: <%- count %>\n";
@@ -32331,14 +32333,16 @@ module.exports = function() {
       this.removeAttributeNS(name.space, name.local);
     }
     function attrConstant() {
-      this.setAttribute(name, value);
+      if (!Number.isNaN(value)) {
+        this.setAttribute(name, value);
+      }
     }
     function attrConstantNS() {
       this.setAttributeNS(name.space, name.local, value);
     }
     function attrFunction() {
       var x = value.apply(this, arguments);
-      if (x == null) this.removeAttribute(name); else this.setAttribute(name, x);
+      if (x == null || Number.isNaN(x)) this.removeAttribute(name); else this.setAttribute(name, x);
     }
     function attrFunctionNS() {
       var x = value.apply(this, arguments);
